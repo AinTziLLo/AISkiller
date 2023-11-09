@@ -7,6 +7,8 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain.output_parsers import CommaSeparatedListOutputParser, PydanticOutputParser
 from langchain.prompts import PromptTemplate
 from langchain.pydantic_v1 import BaseModel, Field
+import csv
+from datetime import datetime
 
 
 class AISkiller:
@@ -33,6 +35,7 @@ class AISkiller:
         self.student = student
         self.verbose = verbose
         self.retry_question = False
+        self.user_timestamp = str(datetime.now().timestamp())
 
         if fake_data:
             self.profession = "Frontend Developer"
@@ -41,8 +44,8 @@ class AISkiller:
             self.q_a = [
                 {
                     'skill': 'HTML/CSS',
-                    'question': 'What is the purpose of the "z-index" property in CSS?',
-                    'ai_reference': 'The purpose of the "z-index" property in CSS is to specify the stack order of an element, relative to other elements on the same page. It is used to control the overlapping of elements on the page, with higher values indicating higher priority.',
+                    'question': 'What is the purpose of the z-index property in CSS?',
+                    'ai_reference': 'The purpose of the z-index property in CSS is to specify the stack order of an element, relative to other elements on the same page. It is used to control the overlapping of elements on the page, with higher values indicating higher priority.',
                     'answer': None,
                     'score': None,
                     'evaluation': None
@@ -72,6 +75,8 @@ class AISkiller:
             self.q_a = []
             self.get_questions()
 
+        self.save_q_a_log_to_csv()
+
         if self.verbose:
             print("-" * 9, "init", "-" * 9)
             print("skills related to a " + self.profession + " in the field of " + self.field + ":")
@@ -82,7 +87,7 @@ class AISkiller:
     def get_field(self):
         return self.chat_open_ai_model([
             SystemMessage(
-                content="You are a bot specialized in finding the scope of a particular profession in one short sentence"),
+                content="You are a bot specialized in finding the scope of a particular profession in one short sentence; if you don't find an answer, reply with \"\"\"Work\"\"\""),
             HumanMessage(content="Data Scientist"),
             AIMessage(content="Data Science"),
             HumanMessage(content="carpenter"),
@@ -109,28 +114,24 @@ class AISkiller:
         else:
             language_from = "english"
             language_to = "italian"
-        try:
-            result = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-1106",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert translator from " + language_from + " to " + language_to + " with experience in texts related to the " + self.profession + " profession.\nTranslate the user input into " + language_to + "."
-                    },
-                    {
-                        "role": "user",
-                        "content": message
-                    }
-                ],
-                temperature=0,
-                max_tokens=1024,
-                top_p=1,
-                frequency_penalty=0,
-                presence_penalty=0
-            ).choices[-1].message.content
-        except:
-            result = ".:ERR:."
-        return result
+        return openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-1106",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert translator from " + language_from + " to " + language_to + " with experience in texts related to the " + self.profession + " .\nTranslate the user input into " + language_to + " and output only the translated text."
+                },
+                {
+                    "role": "user",
+                    "content": message
+                }
+            ],
+            temperature=0,
+            max_tokens=512,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        ).choices[-1].message.content
 
     def get_skills(self):
         prompt = PromptTemplate(
@@ -151,7 +152,7 @@ The selected skills must be easily measurable in a short interview.
         llm = OpenAI(temperature=0.33, openai_api_key=openai.api_key, max_tokens=512)
         new_question_prompt = PromptTemplate(
             template="""Act like an expert {field} teacher who has taught a course that delves into {skill}.
-    Generate a question on a theoretical {skill} topic in the form of a short, formal text; the question must be in such a form as to require a very short answer and to allow an unambiguous evaluation; only those who have a profound knowledge of the {skill} should be able to answer this question correctly and completely. Don't add comments of any kind, just write the question.""",
+    Generate a question about {skill} in the form of a short, formal text; the question must be in such a form as to require a very short answer and to allow an unambiguous evaluation. Don't add comments of any kind, just write the question.""",
             input_variables=["field", "skill"]
         )
         ai_answer_prompt = PromptTemplate(
@@ -221,4 +222,15 @@ The selected skills must be easily measurable in a short interview.
                         self.retry_question = True
                     else:
                         self.retry_question = False
+                self.save_q_a_log_to_csv()
                 return self.q_a[q_a_idx]
+
+    def save_q_a_log_to_csv(self):
+        filename = 'data/' + self.user_timestamp + '_log.csv'
+        with open(filename, 'w', newline='\n') as csvfile:
+            fieldnames = ['skill', 'question', 'ai_reference', 'answer', 'eng_answer', 'score', 'evaluation', 'finished']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+
+            for item in self.q_a:
+                writer.writerow(item)

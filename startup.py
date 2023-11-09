@@ -1,6 +1,7 @@
 import gradio as gr
 import random
 from AISkiller import AISkiller
+from conf import *
 
 ai_skiller = AISkiller()
 
@@ -19,15 +20,16 @@ Certifica le tue skill.""")
 
     with gr.Tab("Setup"):
         with gr.Column():
-            error_box = gr.Markdown("*Errore di configurazione*: il tuo **nomiinativo** e la **professione** devono essere descritti da almeno una parola e comunque da almeno 6 caratteri, il **numero di domande** deve essere tra 6 e 20.", visible=False)
             student_tbox = gr.Textbox(label='Nominativo:', placeholder='Roberta Bianchi', info="Nome / nickname")
             profession_tbox = gr.Textbox(label='Professione:', placeholder='Python Backend Developer', info="Nome della professione da valutare")
-            questions_number_slider = gr.Slider(label="n° max domande",
-                                         info="Seleziona un numero massimo di domande tra 6 e 20",
-                                         value=6,
-                                         minimum=6,
-                                         maximum=20,
-                                         step=1)
+            questions_number_slider = gr.Slider(
+                label="n° max domande",
+                info="Seleziona un numero massimo di domande tra 6 e 20",
+                value=6,
+                minimum=6,
+                maximum=20,
+                step=1
+            )
             setup_btn = gr.Button("Conferma (e attendi circa 10 secondi...)")
 
     chatbot_tab = gr.Tab("SkillBot")
@@ -55,33 +57,60 @@ Certifica le tue skill.""")
                 return "", chat_history
 
             msg.submit(respond, [msg, chatbot], [msg, chatbot])
+
+
+    def random_student():
+        return random.choice([
+            'Mario Rossi',
+            'Luigi Bianchi',
+            'Roberta Verdi',
+            'Luca Neri'
+        ])
+
+    def random_profession():
+        return random.choice([
+            'Data Scientist',
+            'Data Analyst',
+            'Machine Learning Specialist',
+            'Python Developer',
+            'AI Researcher',
+            'Data Architect',
+            'AI Product Manager'
+        ])
+
     def check_setup(student, profession, questions_number):
-        if len(profession) < 6 or questions_number < 6 or questions_number > 20:
-            return {error_box: gr.Markdown(visible=True)}
-        else:
-            ai_skiller.setup(
-                profession=profession,
-                student=student,
-                questions_number=int(questions_number / 2),
-                fake_data=False,
-                verbose=False
-            )
-            next_question = ai_skiller.step()
-            return {
-                not_ready: gr.Column(visible=False),
-                setup_btn: gr.Button(visible=False),
-                skillb: gr.Column(visible=True),
-                error_box: gr.Markdown(visible=False),
-                profession_tbox: gr.Textbox(interactive=False),
-                student_tbox: gr.Textbox(interactive=False),
-                questions_number_slider: gr.Slider(interactive=False),
-                chatbot: gr.Chatbot([[None, "Ciao, sono qui per valutare le tue competenze per la professione di " + profession + ". Partiamo subito con la prima domanda:"], [None, next_question]]),
-            }
+        if len(profession) < 6:
+            profession = random_profession()
+        if len(student) < 6:
+            student = random_student()
+        ai_skiller.setup(
+            profession=profession,
+            student=student,
+            questions_number=int(questions_number / 2),
+            fake_data=False,
+            verbose=False
+        )
+        next_question = ai_skiller.step()
+        return {
+            not_ready: gr.Column(visible=False),
+            setup_btn: gr.Button(visible=False),
+            skillb: gr.Column(visible=True),
+            profession_tbox: gr.Textbox(interactive=False, value=profession),
+            student_tbox: gr.Textbox(interactive=False, value=student),
+            questions_number_slider: gr.Slider(interactive=False),
+            chatbot: gr.Chatbot([[None, "Ciao, sono qui per valutare le tue competenze per la professione di " + profession + ". Partiamo subito con la prima domanda:"], [None, next_question]]),
+        }
 
     setup_btn.click(
         check_setup,
         [student_tbox, profession_tbox, questions_number_slider],
-        [not_ready, skillb, error_box, profession_tbox, student_tbox, questions_number_slider, chatbot, setup_btn],
+        [not_ready, skillb, profession_tbox, student_tbox, questions_number_slider, chatbot, setup_btn],
     )
 
-demo.launch(show_api=False, auth=("dm", "4242"))
+demo.launch(show_api=False, auth=(login, password), server_name=server_name, server_port=server_port, share=True)
+
+"""
+skill specifiche
+    domande simili non uguali
+    domande randomm (no ripetute)
+"""
