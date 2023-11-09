@@ -109,24 +109,28 @@ class AISkiller:
         else:
             language_from = "english"
             language_to = "italian"
-        return openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-1106",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert translator from " + language_from + " to " + language_to + " with experience in texts related to the " + self.profession + " profession.\nTranslate the user input into " + language_to + "."
-                },
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ],
-            temperature=0,
-            max_tokens=1024,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0
-        ).choices[-1].message.content
+        try:
+            result = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-1106",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert translator from " + language_from + " to " + language_to + " with experience in texts related to the " + self.profession + " profession.\nTranslate the user input into " + language_to + "."
+                    },
+                    {
+                        "role": "user",
+                        "content": message
+                    }
+                ],
+                temperature=0,
+                max_tokens=1024,
+                top_p=1,
+                frequency_penalty=0,
+                presence_penalty=0
+            ).choices[-1].message.content
+        except:
+            result = ".:ERR:."
+        return result
 
     def get_skills(self):
         prompt = PromptTemplate(

@@ -84,4 +84,4 @@ Certifica le tue skill.""")
         [not_ready, skillb, error_box, profession_tbox, student_tbox, questions_number_slider, chatbot, setup_btn],
     )
 
-demo.launch(show_api=False, auth=("admin", "1111"))
+demo.launch(show_api=False, auth=("dm", "4242"))
