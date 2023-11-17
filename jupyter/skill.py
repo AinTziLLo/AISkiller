@@ -24,13 +24,15 @@ class Skill:
                 total_score = 0
                 skills_list = []
                 for i in range(sub_skills_number):
-                    if not self.sub_skills[i].evaluate():
-                        skills_list.append(self.sub_skills[i])
-                    else:
+                    if self.sub_skills[i].evaluate():
                         total_score += self.sub_skills[i].score
+                    else:
+                        skills_list.append(self.sub_skills[i])
                 if len(skills_list) == 0:
                     self.score = int(total_score / sub_skills_number)
                     return self.score
                 else:
                     res = random.choice(skills_list)
                     return res
+            else:
+                return self
