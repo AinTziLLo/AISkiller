@@ -1,4 +1,4 @@
-from skills import *
+from skills_eng import *
 from carrier_path import CarrierPath
 
 
@@ -11,8 +11,8 @@ class PythonDeveloperCP(CarrierPath):
         super(PythonDeveloperCP, self).__init__(
             name="Python Developer",
             modules=[
-                SKILL_Programmazione,
-                SKILL_Reti,
+                SKILL_Programming,
+                SKILL_Networks,
                 SKILL_DataScience,
                 SKILL_MachineLearning
             ])
